@@ -1,0 +1,17 @@
+@font-face {
+  font-family: 'VT323';
+  src: url('/VT323-Regular.ttf') format('truetype');
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: #a7e4ae;
+  font-family: 'VT323';
+}
+
+.inverted {
+  background: #a7e4ae;
+  border-color: #2a333e;
+  color: #2a333e;
+}
