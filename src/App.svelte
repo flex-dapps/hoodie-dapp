@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import providedWallet from "./stores/provided-wallet";
 
+  import { terminal } from "./stores";
   import { Container, Terminal, Product } from "./components";
 
   onMount(() => {
@@ -30,7 +31,7 @@
     <div class="flex justify-between w-100 h-100">
       <div class="w-50 h-100">
         <Container right={true}>
-          <Terminal bind:state />
+          <Terminal bind:state {terminal} />
         </Container>
       </div>
       <div class="w-50 h-100">
