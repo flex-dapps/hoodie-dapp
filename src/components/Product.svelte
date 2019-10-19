@@ -8,12 +8,8 @@
     setTimeout(() => {
       canvas.height = canvas.clientHeight;
       canvas.width = canvas.clientWidth;
-      console.log({ canvas });
       frame = requestAnimationFrame(loop);
     }, 500);
-
-    console.log(canvas.clientHeight);
-    console.log({ canvas });
 
     function loop() {
       console.log("hello");
@@ -23,7 +19,6 @@
       // }
       ctx.fillStyle = "red";
       ctx.fillRect(50, 50, 50, 50);
-      frame = requestAnimationFrame(loop);
     }
     return () => {
       cancelAnimationFrame(frame);
