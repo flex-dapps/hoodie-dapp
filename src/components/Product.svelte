@@ -1,12 +1,19 @@
 <script>
   import { onMount } from "svelte";
+  import { fade, fly } from "svelte/transition";
   let canvas = document.getElementsByTagName("canvas")[0];
   import { triangle, meter, barcode, slidingSquare } from "./shapes";
+
+  export let transactions;
 
   let frame;
   let t = 0;
   let width, height;
   let mouse = {};
+
+  transactions.subscribe(tx => {
+    console.log({ tx });
+  });
 
   onMount(() => {
     let ctx = canvas.getContext("2d");
@@ -71,9 +78,25 @@
     width: 100%;
     height: 100%;
   }
+  .fade {
+    opacity: 0.5;
+    transition: all 1s linear;
+  }
 </style>
 
 <div class="product w-100 h-100 flex items-center">
   <img src="/img/front-5.png" />
   <canvas bind:this={canvas} />
+  <div
+    class="w-100 h-100 absolute flex flex-column items-start justify-end
+    overflow-hidden">
+    {#each $transactions as tx}
+      <div
+        class="fade"
+        in:fly={{ y: 200, duration: 2000 }}
+        on:introend={e => {}}>
+        <pre>{JSON.stringify(tx.transaction, null, 1)}</pre>
+      </div>
+    {/each}
+  </div>
 </div>

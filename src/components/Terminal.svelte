@@ -111,10 +111,6 @@
     emitter
   } = wallet;
 
-  wallet.txCallback.set(tx => {
-    console.log({ tx });
-  });
-
   const purchaseFlow = {
     STEP_1: () => {
       update(

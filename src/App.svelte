@@ -1,10 +1,18 @@
 <script>
   import { onMount } from "svelte";
+  import { writable } from "svelte/store";
 
   import { terminal, wallet } from "./stores";
   import { Container, Terminal, Product } from "./components";
 
   let state;
+  let transactions = writable([]);
+  wallet.txCallback.set(tx => {
+    transactions.update(t => {
+      t.push(tx);
+      return t;
+    });
+  });
 </script>
 
 <style>
@@ -30,7 +38,7 @@
         </Container>
       </div>
       <div class="w-50 h-100">
-        <Product bind:state />
+        <Product bind:state bind:transactions />
       </div>
     </div>
   </Container>
