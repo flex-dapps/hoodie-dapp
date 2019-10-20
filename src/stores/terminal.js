@@ -3,6 +3,7 @@ import { writable, readable, get } from 'svelte/store'
 const terminal = {
   DEFAULT_HANDLER_KEY: '_DEFAULT',
   paras: writable([]),
+  prompt: writable(''),
   updateInterval: writable(100),
   handlers: {},
   setHandlers: obj => {
@@ -17,11 +18,17 @@ const terminal = {
       terminal.defaultHandler(input)
     }
   },
-  defaultHandler: input => {},
-  update: newParas => {
+  defaultHandler: input => {
+    if (!input) return terminal.update([``])
+    terminal.update([`Command "${input}" not recognised`])
+  },
+  update: (newParas, callback) => {
     const paras = newParas
     let interval = setInterval(() => {
-      if (paras.length === 0) return clearInterval(interval)
+      if (paras.length === 0) {
+        if (callback) callback()
+        return clearInterval(interval)
+      }
       terminal.paras.update(p => {
         p.push(paras.shift())
         return p

@@ -1,2 +1,2 @@
 export { default as terminal } from './terminal'
-export { default as providedWallet } from './provided-wallet'
+export { default as wallet } from './provided-wallet'

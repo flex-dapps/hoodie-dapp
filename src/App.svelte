@@ -1,13 +1,8 @@
 <script>
   import { onMount } from "svelte";
-  import providedWallet from "./stores/provided-wallet";
 
-  import { terminal } from "./stores";
+  import { terminal, wallet } from "./stores";
   import { Container, Terminal, Product } from "./components";
-
-  onMount(() => {
-    providedWallet.init(window.web3);
-  });
 
   let state;
 </script>
@@ -31,7 +26,7 @@
     <div class="flex justify-between w-100 h-100">
       <div class="w-50 h-100">
         <Container right={true}>
-          <Terminal bind:state {terminal} />
+          <Terminal bind:state {terminal} {wallet} />
         </Container>
       </div>
       <div class="w-50 h-100">
