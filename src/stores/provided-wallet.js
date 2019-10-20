@@ -1,11 +1,13 @@
 import ethers from 'ethers'
 import Onboard from 'bnc-onboard'
-import { writable } from 'svelte/store'
+import { writable, derived, get } from 'svelte/store'
 import getSigner from './signer'
 
-let provider = ethers.getDefaultProvider('homestead')
+// let provider = ethers.getDefaultProvider('homestead')
+let provider = ethers.getDefaultProvider('rinkeby')
 
-let DAI_ADDRESS = '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359'
+// let DAI_ADDRESS = '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359' // mainnet
+let DAI_ADDRESS = '0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa' // rinkeby
 let DAI_ABI = [
   {
     constant: true,
@@ -331,7 +333,8 @@ let DAI_ABI = [
     type: 'event'
   }
 ]
-let UNISWAP_ADDRESS = '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95'
+// let UNISWAP_ADDRESS = '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95' // mainnet
+let UNISWAP_ADDRESS = '0xf5D915570BC477f9B8D6C0E980aA81757A3AaC36' // rinkeby
 let UNISWAP_ABI = [
   {
     name: 'NewExchange',
@@ -891,17 +894,605 @@ let UNISWAP_EXCHANGE_ABI = [
     gas: 1713
   }
 ]
+let HOODIE_DAPP_ADDRESS = '0x3C6592DB105616B0ffeaA4ff49E2a04F16F2f155'
+let HOODIE_DAPP_ABI = [
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getWaitingList",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "minimumDepositAmount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "topUpAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "increaseDepositAmount",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "nextInLine",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "rDAIContract",
+		"outputs": [
+			{
+				"internalType": "contract IRToken",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "issueFDH",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "doChangeHat",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "rDaiContractAddress",
+				"type": "address"
+			}
+		],
+		"name": "switchRDaiContractInstance",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "DAIContract",
+		"outputs": [
+			{
+				"internalType": "contract IDai",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "mostDeposited",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "roundNumber",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "proportion",
+		"outputs": [
+			{
+				"internalType": "uint32",
+				"name": "",
+				"type": "uint32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "hatID",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "recipient",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "proportions",
+		"outputs": [
+			{
+				"internalType": "uint32",
+				"name": "",
+				"type": "uint32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "isOwner",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "users",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "numOfHoodie",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "rNumber",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "depositedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isWaiting",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "hoodieCost",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "recipients",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "depositAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "mintRDaiAndPushUserToWaitingList",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "waitingList",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "redeemAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "redeemRDai",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "daiContractAddress",
+				"type": "address"
+			}
+		],
+		"name": "switchDaiContractInstance",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "hoodieReceivers",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "depositedAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "roundNumber",
+				"type": "uint256"
+			}
+		],
+		"name": "UserPushedIntoWaitingList",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "recipientOfHoodie",
+				"type": "address"
+			}
+		],
+		"name": "IssuedFDH",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newRountNumber",
+				"type": "uint256"
+			}
+		],
+		"name": "NewRoundStarted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newDepositedAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "IncreasedDeposit",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newDepositedAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "RedeemedRDai",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	}
+]
 
-const daiContract = new ethers.Contract(DAI_ADDRESS, DAI_ABI, provider)
-const uniswapFactory = new ethers.Contract(
+
+let daiContract = new ethers.Contract(DAI_ADDRESS, DAI_ABI, provider)
+let uniswapFactory = new ethers.Contract(
   UNISWAP_ADDRESS,
   UNISWAP_ABI,
   provider
-)
+  )
+let hoodieDappContract = new ethers.Contract(HOODIE_DAPP_ADDRESS, HOODIE_DAPP_ABI, provider)
 let daiExchangeAddress
 let daiExchangeContract
 let signer
 
+let waitingList = writable([])
 const store = {
   provider,
   init: async ({ showSelect }) => {
@@ -942,15 +1533,98 @@ const store = {
     )
     return tx
   },
-  depositDai: daiAmount => {
+  depositDai: async daiAmount => {
+    console.log({ daiAmount })
     // here we call keisaku's contract twice to deposit the DAI from the user's
     // wallet
+    const daiAmountBn = ethers.utils.parseEther(daiAmount.toString())
+    await store.approveDai(daiAmount)
+    hoodieDappContract = hoodieDappContract.connect(signer)
+    const tx = await hoodieDappContract.mintRDaiAndPushUserToWaitingList(daiAmountBn)
+    return tx
+  },
+  approveDai: async daiAmount => {
+    console.log({ daiAmount })
+    daiContract = daiContract.connect(signer)
+    const { hash, wait } = await daiContract.approve(HOODIE_DAPP_ADDRESS, ethers.utils.parseEther(daiAmount.toString()))
+    console.log({ hash })
+    return wait()
+  },
+  getWaitingList: async () => {
+    const waitingList = await hoodieDappContract.getWaitingList()
+    store.populateWaitingList(waitingList)
+    return waitingList
+  },
+  isOnWaitingList: async () => {
+    const waitingList = await store.getWaitingList()
+    for (let user of waitingList) {
+      console.log({user})
+      console.log({address: get(store.address)})
+      if (get(store.address).toLowerCase() === user.toLowerCase()) {
+        return true
+      }
+    }
+    return false
+  },
+  getDappDaiBalance: () => {
+    // return await daiContract.balanceOf(HOODIE_DAPP_ADDRESS)
+  },
+  getDappInterestBalance: () => {
+
+  },
+  populateWaitingList: async (list) => {
+    let promises = []
+    for (let user of list) {
+      promises.push(new Promise(async (resolve) => {
+        const struct = await hoodieDappContract.users(user)
+        struct.address = user
+        resolve(struct)
+      }))
+    }
+    const detailedList = await Promise.all(promises)
+    waitingList.set(detailedList)
+  },
+  myWaitingListPosition: () => {
+    const list = get(store.sortedWaitingList)
+    const i = 0
+    for (let user of list) {
+      if (user.address.toLowerCase() === get(store.address).toLowerCase()) return store.formatPosition(i)
+      i++
+    }
   },
   balance: writable(0),
   address: writable(''),
   network: writable(0),
-  daiBalance: writable(0)
+  daiBalance: writable(0),
+  waitingList,
+  sortedWaitingList: derived(waitingList, $newList => {
+    console.log({$newList})
+    return $newList.sort((a, b) => {
+      if (a.depositedAmount.lt(b.depositedAmount)) {
+        return 1
+      } else if (a.depositedAmount.gt(b.depositedAmount)) {
+        return -1
+      }
+    }).filter((u) => u.isWaiting)
+  }, new Promise(() => {})),
+  totalDaiDeposited: derived(waitingList, $list => {
+    return $list.reduce((acc, user) => acc.add(user.depositedAmount), ethers.utils.bigNumberify(0))
+  }),
+  formatPosition: (pos) => {
+    console.log({pos})
+    const posString = pos.toString()
+    const lastChar = posString.substr(pos.length - 1, 1)
+    if (lastChar === '1') return posString + 'st'
+    if (lastChar === '2') return posString + 'nd'
+    if (lastChar === '3') return posString + 'rd'
+    return posString + 'th'
+  }
 }
+
+store.sortedWaitingList.subscribe(nl => {
+  console.log({ nl })
+})
+
 
 const onboard = Onboard.init({
   dappId: '78761f7e-d978-4d9d-91c0-172e5d997116',
@@ -984,11 +1658,11 @@ const onboard = Onboard.init({
   modules: {
     // default wallets that are included: MetaMask, Dapper, Coinbase, Trust, WalletConnect
     walletSelect: Onboard.modules.select.defaults({
-      networkId: 1
+      networkId: 4
     }),
     // default ready steps are: connect, network, balance
     walletReady: Onboard.modules.ready.defaults({
-      networkId: 1
+      networkId: 4
     })
   }
 })

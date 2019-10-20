@@ -15,6 +15,8 @@
     <Input />
   */
 
+  const MINIMUM_DAI_REQUIRED = 1;
+
   const swagShopAscii = `
  ::::::::  :::       :::     :::      ::::::::        ::::::::  :::    :::  ::::::::  :::::::::
 :+:    :+: :+:       :+:   :+: :+:   :+:    :+:      :+:    :+: :+:    :+: :+:    :+: :+:    :+:
@@ -25,14 +27,24 @@
  ########    ###   ###   ###     ###  ########        ########  ###    ###  ########  ###
   `;
 
+  const welcomeAscii = `
+:::       ::: :::::::::: :::        ::::::::   ::::::::  ::::    ::::  ::::::::::
+:+:       :+: :+:        :+:       :+:    :+: :+:    :+: +:+:+: :+:+:+ :+:
++:+       +:+ +:+        +:+       +:+        +:+    +:+ +:+ +:+:+ +:+ +:+
++#+  +:+  +#+ +#++:++#   +#+       +#+        +#+    +:+ +#+  +:+  +#+ +#++:++#
++#+ +#+#+ +#+ +#+        +#+       +#+        +#+    +#+ +#+       +#+ +#+
+ #+#+# #+#+#  #+#        #+#       #+#    #+# #+#    #+# #+#       #+# #+#
+  ###   ###   ########## ########## ########   ########  ###       ### ##########
+  `;
+
   const waitingListAscii = `
-:::::::::: :::::::::  ::::::::::: :::::::::: ::::    ::: :::::::::   ::::::::
-:+:        :+:    :+:     :+:     :+:        :+:+:   :+: :+:    :+: :+:    :+:
-+:+        +:+    +:+     +:+     +:+        :+:+:+  +:+ +:+    +:+ +:+
-:#::+::#   +#++:++#:      +#+     +#++:++#   +#+ +:+ +#+ +#+    +:+ +#++:++#++
-+#+        +#+    +#+     +#+     +#+        +#+  +#+#+# +#+    +#+        +#+
-#+#        #+#    #+#     #+#     #+#        #+#   #+#+# #+#    #+# #+#    #+#
-###        ###    ### ########### ########## ###    #### #########   ########
+::::::::::: :::    ::: ::::::::::      :::        ::::::::  :::   :::   :::     :::
+    :+:     :+:    :+: :+:             :+:       :+:    :+: :+:   :+: :+: :+:   :+:
+    +:+     +:+    +:+ +:+             +:+       +:+    +:+  +:+ +:+ +:+   +:+  +:+
+    +#+     +#++:++#++ +#++:++#        +#+       +#+    +:+   +#++: +#++:++#++: +#+
+    +#+     +#+    +#+ +#+             +#+       +#+    +#+    +#+  +#+     +#+ +#+
+    #+#     #+#    #+# #+#             #+#       #+#    #+#    #+#  #+#     #+# #+#
+    ###     ###    ### ##########      ########## ########     ###  ###     ### ##########
   `;
 
   const errorAscii = `
@@ -45,10 +57,40 @@
 ########## ###    ### ###    ###  ########  ###    ###
   `;
 
+  const successAscii = `
+ ::::::::  :::    :::  ::::::::   ::::::::  :::::::::: ::::::::   ::::::::
+:+:    :+: :+:    :+: :+:    :+: :+:    :+: :+:       :+:    :+: :+:    :+:
++:+        +:+    +:+ +:+        +:+        +:+       +:+        +:+
++#++:++#++ +#+    +:+ +#+        +#+        +#++:++#  +#++:++#++ +#++:++#++
+       +#+ +#+    +#+ +#+        +#+        +#+              +#+        +#+
+#+#    #+# #+#    #+# #+#    #+# #+#    #+# #+#       #+#    #+# #+#    #+#
+ ########   ########   ########   ########  ########## ########   ########
+  `;
+
+  const welcomeBackAscii = `
+  :::    ::: :::::::::: :::        :::        ::::::::
+  :+:    :+: :+:        :+:        :+:       :+:    :+:
+  +:+    +:+ +:+        +:+        +:+       +:+    +:+
+  +#++:++#++ +#++:++#   +#+        +#+       +#+    +:+
+  +#+    +#+ +#+        +#+        +#+       +#+    +#+
+  #+#    #+# #+#        #+#        #+#       #+#    #+#
+  ###    ### ########## ########## ########## ########
+    :::      ::::::::      :::     ::::::::::: ::::    :::
+  :+: :+:   :+:    :+:   :+: :+:       :+:     :+:+:   :+:
+ +:+   +:+  +:+         +:+   +:+      +:+     :+:+:+  +:+
++#++:++#++: :#:        +#++:++#++:     +#+     +#+ +:+ +#+
++#+     +#+ +#+   +#+# +#+     +#+     +#+     +#+  +#+#+#
+#+#     #+# #+#    #+# #+#     #+#     #+#     #+#   #+#+#
+###     ###  ########  ###     ### ########### ###    ####
+  `;
+
   const ascii = {
     ASCII_SWAG_SHOP: swagShopAscii,
     ASCII_WAITING_LIST: waitingListAscii,
-    ASCII_ERROR: errorAscii
+    ASCII_ERROR: errorAscii,
+    ASCII_SUCCESS: successAscii,
+    ASCII_WELCOME: welcomeAscii,
+    ASCII_WELCOME_BACK: welcomeBackAscii
   };
 
   let answer = "";
@@ -60,7 +102,13 @@
   export let wallet;
   export let terminal;
   let { paras, update, setHandlers, prompt } = terminal;
-  let { address, balance, daiBalance, ethRequiredForDai } = wallet;
+  let {
+    address,
+    balance,
+    daiBalance,
+    ethRequiredForDai,
+    sortedWaitingList
+  } = wallet;
 
   // @TODO: WELCOME_BACK
 
@@ -89,9 +137,8 @@
       update([`Connecting...`], () => prompt.set(`Connecting...`));
       let loadingInterval = printLoading();
       wallet.init({});
-      address.subscribe(a => {
-        if (!a) return;
-        clearInterval(loadingInterval);
+      console.log({ address: get(address) });
+      let gotWallet = a => {
         update(
           [
             `Connected!`,
@@ -103,8 +150,13 @@
         );
 
         setHandlers({
-          y: () => {
-            purchaseFlow["STEP_3"]();
+          y: async () => {
+            console.log({ list: await wallet.isOnWaitingList() });
+            if (await wallet.isOnWaitingList()) {
+              purchaseFlow["WELCOME_BACK"]();
+            } else {
+              purchaseFlow["STEP_3"]();
+            }
           },
           n: () => {
             update([
@@ -123,9 +175,18 @@
             });
           },
           _DEFAULT: () => {
-            purchaseFlow["STEP_3"]();
+            terminal.handlers.y();
           }
         });
+      };
+      if (get(address)) {
+        clearInterval(loadingInterval);
+        return gotWallet(get(address));
+      }
+      address.subscribe(a => {
+        if (!a) return;
+        clearInterval(loadingInterval);
+        gotWallet(a);
       });
       setHandlers({
         _DEFAULT: () => {
@@ -135,7 +196,7 @@
     },
     STEP_3: async () => {
       update([`--`]);
-      if (get(daiBalance) >= 200) {
+      if (get(daiBalance) >= MINIMUM_DAI_REQUIRED) {
         update(
           [
             `Great.`,
@@ -146,6 +207,7 @@
 
         setHandlers({
           y: async () => {
+            console.log(get(daiBalance));
             if (isNaN(Number(answer))) {
               return update([
                 `Please enter a number between 200 and ${Math.floor(
@@ -155,7 +217,10 @@
             }
             update([`Depositing ${answer} DAI...`]);
             const loadingInterval = printLoading(500);
+
             try {
+              // @todo we should really pause the output after the first tx
+              // is confirmed by the user
               const { hash, wait } = await wallet.depositDai(Number(answer));
               clearInterval(loadingInterval);
               update([`Transaction: ${hash}`, "Mining, please wait..."]);
@@ -166,6 +231,7 @@
                 purchaseFlow["DEPOSIT_TX_FAILED"]();
               }
             } catch (e) {
+              console.error(e);
               clearInterval(loadingInterval);
               purchaseFlow["DEPOSIT_TX_FAILED"](
                 "USER_DENIED_TRANSACTION_SIGNATURE"
@@ -232,7 +298,7 @@
             update([`Okay.`], printStart);
           },
           _DEFAULT: () => {
-            terminal.handlers.y(daiRequired);
+            terminal.handlers.y(answer || daiRequired);
           }
         });
       }
@@ -278,6 +344,32 @@
         ],
         printStart()
       );
+    },
+    DEPOSIT_TX_SUCCEEDED: tx => {
+      // sweet, now we tell the user their position in the waiting list i guess
+      update([`ASCII_SUCCESS`]);
+      // get the email address of the user who has deposited this DAI, and send
+      // it to ourselves along with the ETH address they used to buy in
+    },
+    WELCOME_BACK: () => {
+      let hint = `Type (i) to increase your DAI position, or (w) to withdraw`;
+      update(
+        [
+          `ASCII_WELCOME_BACK`,
+          `Welcome back, looks like you're already on the waiting list.`,
+          `I must commend your taste.`,
+          `You're currently ${wallet.myWaitingListPosition()} in the queue`,
+          hint
+        ],
+        () => prompt.set(`(i/w): `)
+      );
+      setHandlers({
+        i: () => {},
+        w: () => {},
+        _DEFAULT: () => update([hint])
+      });
+      // tell the user what position they are on the list and roughly how long they
+      // might be waiting; we'll email them...
     }
   };
 
@@ -286,15 +378,25 @@
       purchaseFlow["STEP_1"]();
     },
     w: () => {
-      update([
-        `ASCII_WAITING_LIST`,
-        `- User 4`,
-        `- User 3`,
-        `- User 2`,
-        `- User 1`,
-        `--`,
-        `Type (y) to continue or (w) to see the current waiting list.`
-      ]);
+      let i = get(sortedWaitingList).length;
+      let waitingListEntries = get(sortedWaitingList)
+        .reverse()
+        .map(u => {
+          return `${wallet.formatPosition(i--)} -- ${u.address}: ${Number(
+            ethers.utils.formatEther(u.depositedAmount)
+          ).toFixed(2)} DAI`;
+        });
+      console.log(waitingListEntries);
+      let updateArr = [`ASCII_WAITING_LIST`]
+        .concat(waitingListEntries)
+        .concat([
+          `----`,
+          `Total DAI deposited: ${Number(
+            ethers.utils.formatEther(get(wallet.totalDaiDeposited))
+          ).toFixed(2)}`,
+          `Type (y) to continue or (w) to see the current waiting list.`
+        ]);
+      update(updateArr);
     },
     _DEFAULT: () => {
       purchaseFlow["STEP_1"]();
@@ -333,10 +435,12 @@
     return loadingInterval;
   }
 
-  onMount(() => {
+  onMount(async () => {
     input.focus();
     setInterval(() => input.focus(), 100);
     printStart();
+    const list = await wallet.getWaitingList();
+    console.log({ list });
   });
 
   paras.subscribe(() => {
@@ -355,7 +459,7 @@
     const handler = terminal.handlers[answer.toLowerCase()];
     if (handler) {
       handler(answer);
-    } else if (terminal.handlers[terminal.DEFAULT_HANDLER_KEY]) {
+    } else if (terminal.handlers[terminal.DEFAULT_HANDLER_KEY] || !answer) {
       terminal.handlers[terminal.DEFAULT_HANDLER_KEY]();
     } else {
       terminal.defaultHandler(answer);

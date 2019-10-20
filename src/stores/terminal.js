@@ -9,15 +9,6 @@ const terminal = {
   setHandlers: obj => {
     terminal.handlers = obj
   },
-  handle: input => {
-    if (terminal.handlers[input]) {
-      terminal.handlers[input](input)
-    } else if (terminal.handlers[terminal.DEFAULT_HANDLER_KEY]) {
-      terminal.handlers[terminal.DEFAULT_HANDLER_KEY](input)
-    } else {
-      terminal.defaultHandler(input)
-    }
-  },
   defaultHandler: input => {
     if (!input) return terminal.update([``])
     terminal.update([`Command "${input}" not recognised`])
