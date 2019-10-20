@@ -915,7 +915,7 @@ const store = {
       provider
     )
   },
-  purchaseDai: async daiAmount => {
+  ethRequiredForDai: async daiAmount => {
     // should be able to find out from uniswap how to purchase the DAI
     // Buy ERC20 with ETH
     const outputAmount = ethers.utils.parseEther(daiAmount.toString())
@@ -926,7 +926,11 @@ const store = {
     const numerator = outputAmount.mul(inputReserve).mul(1000)
     const denominator = outputReserve.sub(outputAmount).mul(997)
     const inputAmount = numerator.div(denominator).add(1)
-
+    return inputAmount
+  },
+  purchaseDai: async daiAmount => {
+    const outputAmount = ethers.utils.parseEther(daiAmount.toString())
+    const inputAmount = await store.ethRequiredForDai(daiAmount)
     daiExchangeContract = daiExchangeContract.connect(signer)
     const tx = await daiExchangeContract.ethToTokenSwapInput(
       outputAmount,

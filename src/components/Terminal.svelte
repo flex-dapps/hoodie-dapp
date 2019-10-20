@@ -1,4 +1,5 @@
 <script>
+  import ethers from "ethers";
   import { onMount } from "svelte";
   import { writable, get } from "svelte/store";
   import { Container } from "./";
@@ -34,9 +35,20 @@
 ###        ###    ### ########### ########## ###    #### #########   ########
   `;
 
+  const errorAscii = `
+:::::::::: :::::::::  :::::::::   ::::::::  :::::::::
+:+:        :+:    :+: :+:    :+: :+:    :+: :+:    :+:
++:+        +:+    +:+ +:+    +:+ +:+    +:+ +:+    +:+
++#++:++#   +#++:++#:  +#++:++#:  +#+    +:+ +#++:++#:
++#+        +#+    +#+ +#+    +#+ +#+    +#+ +#+    +#+
+#+#        #+#    #+# #+#    #+# #+#    #+# #+#    #+#
+########## ###    ### ###    ###  ########  ###    ###
+  `;
+
   const ascii = {
     ASCII_SWAG_SHOP: swagShopAscii,
-    ASCII_WAITING_LIST: waitingListAscii
+    ASCII_WAITING_LIST: waitingListAscii,
+    ASCII_ERROR: errorAscii
   };
 
   let answer = "";
@@ -48,7 +60,7 @@
   export let wallet;
   export let terminal;
   let { paras, update, setHandlers, prompt } = terminal;
-  let { address, balance, daiBalance } = wallet;
+  let { address, balance, daiBalance, ethRequiredForDai } = wallet;
 
   // @TODO: WELCOME_BACK
 
@@ -121,7 +133,7 @@
         }
       });
     },
-    STEP_3: () => {
+    STEP_3: async () => {
       update([`--`]);
       if (get(daiBalance) >= 200) {
         update(
@@ -155,9 +167,8 @@
               }
             } catch (e) {
               clearInterval(loadingInterval);
-              update(
-                [`-- ERROR --`, `USER_DENIED_TRANSACTION_SIGNATURE`],
-                purchaseFlow["DEPOSIT_TX_FAILED"]()
+              purchaseFlow["DEPOSIT_TX_FAILED"](
+                "USER_DENIED_TRANSACTION_SIGNATURE"
               );
             }
           },
@@ -167,19 +178,27 @@
           }
         });
       } else {
+        const ethRequired = await ethRequiredForDai(200 - get(balance));
+        const daiRequired = (200 - get(balance)).toFixed(2);
+        console.log({ ethRequired });
         update(
           [
             `Unfortunately, you don't have 200 DAI right now.`,
-            `It will cost X ETH to purchase the rest of the DAI you need (DAI_TO_PURCHASE).`
+            `It will cost ${Number(
+              ethers.utils.formatEther(ethRequired)
+            ).toFixed(
+              2
+            )} ETH to purchase the rest of the DAI you need (${daiRequired}).`
           ],
           () =>
             prompt.set(
-              `How much DAI do you want to purchase? (DAI_TO_PURCHASE):`
+              `How much DAI do you want to purchase? (${daiRequired}):`
             )
         );
 
         setHandlers({
-          y: async () => {
+          y: async (dai = null) => {
+            if (dai) answer = dai;
             if (isNaN(Number(answer))) {
               return update([`Please enter a number between 0 and whatever`]);
             } else if (answer === "whatever") {
@@ -202,9 +221,10 @@
                 purchaseFlow["SWAP_TX_FAILED"]();
               }
             } catch (e) {
+              console.error(e);
               clearInterval(loadingInterval);
-              update([`-- ERROR --`, `USER_DENIED_TRANSACTION_SIGNATURE`], () =>
-                purchaseFlow["SWAP_TX_FAILED"]()
+              purchaseFlow["SWAP_TX_FAILED"](
+                `USER_DENIED_TRANSACTION_SIGNATURE`
               );
             }
           },
@@ -212,7 +232,7 @@
             update([`Okay.`], printStart);
           },
           _DEFAULT: () => {
-            terminal.handlers.y();
+            terminal.handlers.y(daiRequired);
           }
         });
       }
@@ -227,13 +247,36 @@
       // the swap has succeeded, now deposit the money
       purchaseFlow["STEP_3"]();
     },
-    SWAP_TX_FAILED: () => {
+    SWAP_TX_FAILED: reason => {
       update(
-        [`Transaction error, nuking the process...`, ``, ``, ``, ``, ``],
+        [
+          `ASCII_ERROR`,
+          reason,
+          `Transaction error, nuking the process...`,
+          ``,
+          ``,
+          ``,
+          ``,
+          ``
+        ],
         () => {
           printStart();
-          prompt.set(``);
         }
+      );
+    },
+    DEPOSIT_TX_FAILED: reason => {
+      update(
+        [
+          `ASCII_ERROR`,
+          reason,
+          "Transaction error, nuking the process...",
+          ``,
+          ``,
+          ``,
+          ``,
+          ``
+        ],
+        printStart()
       );
     }
   };
@@ -327,7 +370,7 @@
     font-size: 1rem;
     transform: scale(0.7);
   }
-  div {
+  .terminal {
     font-size: 1.5rem;
   }
   .overflow-scroll {
@@ -356,7 +399,7 @@
   }
 </style>
 
-<div class="h-100 w-100 flex flex-column justify-between">
+<div class="h-100 w-100 flex flex-column justify-between terminal">
   <div class="w-100 flex h3">
     <div class="w-50">
       <Container inverted={invertedTab[0]} bottom={true}>
@@ -367,12 +410,12 @@
     </div>
     <div class="w-50">
       <Container inverted={invertedTab[1]} bottom={true}>
-        <div class="h-100 flex items-center justify-end pa3">{$address}</div>
+        <div class="h-100 flex items-center justify-end pa3 f4">{$address}</div>
       </Container>
     </div>
   </div>
   <div class="h-100">
-    <div class="talk f5 h-100">
+    <div class="h-100">
       <div class="flex flex-column h-100">
         <div
           bind:this={terminalOutputContainer}
