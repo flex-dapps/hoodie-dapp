@@ -1,5 +1,7 @@
 import ethers from 'ethers'
 import Onboard from 'bnc-onboard'
+import Notify from "bnc-notify"
+
 import { writable, derived, get } from 'svelte/store'
 import getSigner from './signer'
 
@@ -894,7 +896,8 @@ let UNISWAP_EXCHANGE_ABI = [
     gas: 1713
   }
 ]
-let HOODIE_DAPP_ADDRESS = '0x3C6592DB105616B0ffeaA4ff49E2a04F16F2f155'
+let HOODIE_DAPP_ADDRESS = '0xf8296b04890cc0f9b237cB056154893d71Df5214'
+// let HOODIE_DAPP_ADDRESS = '0x3C6592DB105616B0ffeaA4ff49E2a04F16F2f155'
 let HOODIE_DAPP_ABI = [
 	{
 		"constant": true,
@@ -1479,9 +1482,335 @@ let HOODIE_DAPP_ABI = [
 		"type": "event"
 	}
 ]
-
+let R_DAI_ADDRESS = '0xb0C72645268E95696f5b6F40aa5b12E1eBdc8a5A'
+let R_DAI_ABI = [
+  {
+    constant: true,
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', type: 'bytes32' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [],
+    name: 'stop',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'guy', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [{ name: 'owner_', type: 'address' }],
+    name: 'setOwner',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'src', type: 'address' },
+      { name: 'dst', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'guy', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'mint',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [{ name: 'wad', type: 'uint256' }],
+    name: 'burn',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [{ name: 'name_', type: 'bytes32' }],
+    name: 'setName',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [{ name: 'src', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'stopped',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [{ name: 'authority_', type: 'address' }],
+    name: 'setAuthority',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', type: 'address' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', type: 'bytes32' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'guy', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'burn',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [{ name: 'wad', type: 'uint256' }],
+    name: 'mint',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'dst', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'dst', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'push',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'src', type: 'address' },
+      { name: 'dst', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'move',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [],
+    name: 'start',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'authority',
+    outputs: [{ name: '', type: 'address' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [{ name: 'guy', type: 'address' }],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [
+      { name: 'src', type: 'address' },
+      { name: 'guy', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: 'src', type: 'address' },
+      { name: 'wad', type: 'uint256' }
+    ],
+    name: 'pull',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'symbol_', type: 'bytes32' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'constructor'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'guy', type: 'address' },
+      { indexed: false, name: 'wad', type: 'uint256' }
+    ],
+    name: 'Mint',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'guy', type: 'address' },
+      { indexed: false, name: 'wad', type: 'uint256' }
+    ],
+    name: 'Burn',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [{ indexed: true, name: 'authority', type: 'address' }],
+    name: 'LogSetAuthority',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [{ indexed: true, name: 'owner', type: 'address' }],
+    name: 'LogSetOwner',
+    type: 'event'
+  },
+  {
+    anonymous: true,
+    inputs: [
+      { indexed: true, name: 'sig', type: 'bytes4' },
+      { indexed: true, name: 'guy', type: 'address' },
+      { indexed: true, name: 'foo', type: 'bytes32' },
+      { indexed: true, name: 'bar', type: 'bytes32' },
+      { indexed: false, name: 'wad', type: 'uint256' },
+      { indexed: false, name: 'fax', type: 'bytes' }
+    ],
+    name: 'LogNote',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'src', type: 'address' },
+      { indexed: true, name: 'guy', type: 'address' },
+      { indexed: false, name: 'wad', type: 'uint256' }
+    ],
+    name: 'Approval',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'src', type: 'address' },
+      { indexed: true, name: 'dst', type: 'address' },
+      { indexed: false, name: 'wad', type: 'uint256' }
+    ],
+    name: 'Transfer',
+    type: 'event'
+  }
+]
 
 let daiContract = new ethers.Contract(DAI_ADDRESS, DAI_ABI, provider)
+let rDaiContract = new ethers.Contract(R_DAI_ADDRESS, R_DAI_ABI, provider)
 let uniswapFactory = new ethers.Contract(
   UNISWAP_ADDRESS,
   UNISWAP_ABI,
@@ -1495,6 +1824,7 @@ let signer
 let waitingList = writable([])
 const store = {
   provider,
+  emitter: writable(null),
   init: async ({ showSelect }) => {
     onboard.config({ darkMode: true })
     await onboard.walletSelect(showSelect ? null : 'MetaMask')
@@ -1505,6 +1835,8 @@ const store = {
       UNISWAP_EXCHANGE_ABI,
       provider
     )
+    let acc = notify.account(get(store.address))
+    store.emitter.set(acc.emitter)
   },
   ethRequiredForDai: async daiAmount => {
     // should be able to find out from uniswap how to purchase the DAI
@@ -1538,17 +1870,28 @@ const store = {
     // here we call keisaku's contract twice to deposit the DAI from the user's
     // wallet
     const daiAmountBn = ethers.utils.parseEther(daiAmount.toString())
-    await store.approveDai(daiAmount)
     hoodieDappContract = hoodieDappContract.connect(signer)
     const tx = await hoodieDappContract.mintRDaiAndPushUserToWaitingList(daiAmountBn)
     return tx
   },
   approveDai: async daiAmount => {
     console.log({ daiAmount })
+    const daiAmountBn = ethers.utils.parseEther(daiAmount.toString())
     daiContract = daiContract.connect(signer)
-    const { hash, wait } = await daiContract.approve(HOODIE_DAPP_ADDRESS, ethers.utils.parseEther(daiAmount.toString()))
-    console.log({ hash })
-    return wait()
+    const tx = await daiContract.approve(HOODIE_DAPP_ADDRESS, daiAmountBn)
+    return tx
+  },
+  approveRDai: async (rDaiAmount) => {
+    const rDaiAmountBn = ethers.utils.parseEther(rDaiAmount.toString())
+    rDaiContract = rDaiContract.connect(signer)
+    const tx = await rDaiContract.approve(HOODIE_DAPP_ADDRESS, rDaiAmountBn)
+    return tx
+  },
+  withdrawDai: async (daiAmount) => {
+    const daiAmountBn = ethers.utils.parseEther(daiAmount.toString())
+    hoodieDappContract = hoodieDappContract.connect(signer)
+    const tx = await hoodieDappContract.redeemRDai(daiAmountBn)
+    return tx
   },
   getWaitingList: async () => {
     const waitingList = await hoodieDappContract.getWaitingList()
@@ -1556,11 +1899,11 @@ const store = {
     return waitingList
   },
   isOnWaitingList: async () => {
-    const waitingList = await store.getWaitingList()
+    const waitingList = get(store.waitingList)
     for (let user of waitingList) {
       console.log({user})
       console.log({address: get(store.address)})
-      if (get(store.address).toLowerCase() === user.toLowerCase()) {
+      if (get(store.address).toLowerCase() === user.address.toLowerCase() && user.isWaiting) {
         return true
       }
     }
@@ -1571,6 +1914,16 @@ const store = {
   },
   getDappInterestBalance: () => {
 
+  },
+  getMyDaiDeposit: () => {
+    const waitingList = get(store.waitingList)
+    console.log({waitingList})
+    for (let user of waitingList) {
+      if (get(store.address).toLowerCase() === user.address.toLowerCase()) {
+        return ethers.utils.formatEther(user.depositedAmount)
+      }
+    }
+    return 0
   },
   populateWaitingList: async (list) => {
     let promises = []
@@ -1586,7 +1939,7 @@ const store = {
   },
   myWaitingListPosition: () => {
     const list = get(store.sortedWaitingList)
-    const i = 0
+    let i = 0
     for (let user of list) {
       if (user.address.toLowerCase() === get(store.address).toLowerCase()) return store.formatPosition(i)
       i++
@@ -1618,7 +1971,13 @@ const store = {
     if (lastChar === '2') return posString + 'nd'
     if (lastChar === '3') return posString + 'rd'
     return posString + 'th'
-  }
+  },
+  saveEmailAddress: (email) => {
+    // post the email to a server which saves it and posts it to discord
+    store.emailSaved = true
+  },
+  emailSaved: false,
+  txCallback: writable(() => {})
 }
 
 store.sortedWaitingList.subscribe(nl => {
@@ -1628,7 +1987,7 @@ store.sortedWaitingList.subscribe(nl => {
 
 const onboard = Onboard.init({
   dappId: '78761f7e-d978-4d9d-91c0-172e5d997116',
-  networkId: 1,
+  networkId: 4,
   subscriptions: {
     address: async _address => {
       if (!_address) return
@@ -1664,6 +2023,14 @@ const onboard = Onboard.init({
     walletReady: Onboard.modules.ready.defaults({
       networkId: 4
     })
+  }
+})
+
+const notify = Notify({
+  dappId: "78761f7e-d978-4d9d-91c0-172e5d997116",
+  networkId: 4,
+  transactionEvents: event => {
+    get(store.txCallback)(event)
   }
 })
 

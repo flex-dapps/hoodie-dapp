@@ -107,10 +107,13 @@
     balance,
     daiBalance,
     ethRequiredForDai,
-    sortedWaitingList
+    sortedWaitingList,
+    emitter
   } = wallet;
 
-  // @TODO: WELCOME_BACK
+  wallet.txCallback.set(tx => {
+    console.log({ tx });
+  });
 
   const purchaseFlow = {
     STEP_1: () => {
@@ -151,6 +154,7 @@
 
         setHandlers({
           y: async () => {
+            prompt.set("Loading...");
             console.log({ list: await wallet.isOnWaitingList() });
             if (await wallet.isOnWaitingList()) {
               purchaseFlow["WELCOME_BACK"]();
@@ -208,22 +212,53 @@
         setHandlers({
           y: async () => {
             console.log(get(daiBalance));
-            if (isNaN(Number(answer))) {
+            let daiAmount = answer;
+            if (isNaN(Number(daiAmount))) {
               return update([
                 `Please enter a number between 200 and ${Math.floor(
                   get(daiBalance).toFixed(1)
                 )}`
               ]);
             }
-            update([`Depositing ${answer} DAI...`]);
-            const loadingInterval = printLoading(500);
+            update([`Depositing ${daiAmount} DAI...`]);
+            let loadingInterval = printLoading(500);
 
             try {
               // @todo we should really pause the output after the first tx
               // is confirmed by the user
-              const { hash, wait } = await wallet.depositDai(Number(answer));
+              let depositTx = await wallet.approveDai(Number(daiAmount));
+              update(
+                [
+                  `Approved DAI`,
+                  `Tx: ${depositTx.hash}`,
+                  `Let's use this time to grab your email address; we'll message you when your hoodie is done.`,
+                  `Please enter your email.`
+                ],
+                prompt.set(`Email address: `)
+              );
+              setHandlers({
+                _DEFAULT: () => {
+                  if (wallet.emailSaved) return;
+                  let email = answer;
+                  if (/\S+@\S+\.\S+/.test(email)) {
+                    update(
+                      [
+                        `Thanks, we'll email you at ${email} to confirm, and then again when your hoodie is ready.`
+                      ],
+                      prompt.set(`Waiting...`)
+                    );
+                    wallet.saveEmailAddress(email);
+                  } else {
+                    // not a valid email
+                    update([`Invalid, email address.`, `Please re-enter it.`]);
+                  }
+                }
+              });
               clearInterval(loadingInterval);
-              update([`Transaction: ${hash}`, "Mining, please wait..."]);
+              await depositTx.wait();
+              const { hash, wait } = await wallet.depositDai(Number(daiAmount));
+              clearInterval(loadingInterval);
+              update([`Tx: ${hash}`]);
               const tx = await wait();
               if (tx.status) {
                 purchaseFlow["DEPOSIT_TX_SUCCEEDED"](tx);
@@ -279,7 +314,7 @@
             try {
               const { hash, wait } = await wallet.purchaseDai(Number(answer));
               clearInterval(loadingInterval);
-              update([`Transaction: ${hash}`, "Mining, please wait..."]);
+              update([`Tx: ${hash}`]);
               const tx = await wait();
               if (tx.status) {
                 purchaseFlow["SWAP_TX_SUCCEEDED"](tx);
@@ -318,7 +353,7 @@
         [
           `ASCII_ERROR`,
           reason,
-          `Transaction error, nuking the process...`,
+          `Tx error, nuking the process...`,
           ``,
           ``,
           ``,
@@ -347,7 +382,20 @@
     },
     DEPOSIT_TX_SUCCEEDED: tx => {
       // sweet, now we tell the user their position in the waiting list i guess
-      update([`ASCII_SUCCESS`]);
+      update(
+        [
+          `ASCII_SUCCESS`,
+          `You're officially "on the list" as they say.`,
+          `Once there's enough collective interest to pay for your hoodie, we'll be in touch.`,
+          `Keep it real, stay safe, be good.`
+        ],
+        () => {
+          prompt.set(``);
+          setTimeout(() => {
+            autoClose();
+          }, 5000);
+        }
+      );
       // get the email address of the user who has deposited this DAI, and send
       // it to ourselves along with the ETH address they used to buy in
     },
@@ -358,20 +406,97 @@
           `ASCII_WELCOME_BACK`,
           `Welcome back, looks like you're already on the waiting list.`,
           `I must commend your taste.`,
-          `You're currently ${wallet.myWaitingListPosition()} in the queue`,
+          `You're currently ${wallet.myWaitingListPosition()} in the queue with a deposit of ${Number(
+            wallet.getMyDaiDeposit()
+          ).toFixed(2)} DAI`,
           hint
         ],
         () => prompt.set(`(i/w): `)
       );
       setHandlers({
-        i: () => {},
-        w: () => {},
+        i: () => {
+          update([`----`, `How much more DAI would you like to deposit?`], () =>
+            prompt.set("Amount to deposit:")
+          );
+          setHandlers({
+            _DEFAULT: async () => {
+              let moreDai = Number(answer);
+              console.log({ moreDai });
+              update([`Depositing ${moreDai} more DAI`]);
+              let loadingInterval = printLoading();
+              const { hash, wait } = await wallet.depositDai(moreDai);
+              clearInterval(loadingInterval);
+              update([`Waiting for transaction ${hash}`]);
+              const tx = await wait();
+              if (tx.status) {
+                purchaseFlow["DEPOSIT_TX_SUCCEEDED"];
+              } else {
+                purchaseFlow["DEPOSIT_TX_FAILED"];
+              }
+            }
+          });
+        },
+        w: () => {
+          update([`----`, `How much DAI would you like to withdraw?`], () =>
+            prompt.set("Amount to withdraw? (Max): ")
+          );
+          setHandlers({
+            _DEFAULT: async () => {
+              let withdrawAmount = Number(answer);
+              if (!withdrawAmount) withdrawAmount = wallet.getMyDaiDeposit();
+              console.log({ withdrawAmount });
+              update([`Withdrawing ${withdrawAmount} DAI...`]);
+              let loadingInterval = printLoading();
+              prompt.set("Withdrawing...");
+              const approveTx = await wallet.approveRDai(withdrawAmount);
+              update([`Tx: ${approveTx.hash}`]);
+              clearInterval(loadingInterval);
+              await approveTx.wait();
+              const { hash, wait } = await wallet.withdrawDai(withdrawAmount);
+              clearInterval(loadingInterval);
+              update([`Tx: ${hash}`]);
+              const tx = await wait();
+              console.log({ tx });
+              if (tx.status) {
+                purchaseFlow["WITHDRAW_TX_SUCCEEDED"]();
+              } else {
+                purchaseFlow["WITHDRAW_TX_FAILED"]();
+              }
+            }
+          });
+        },
         _DEFAULT: () => update([hint])
       });
       // tell the user what position they are on the list and roughly how long they
       // might be waiting; we'll email them...
+    },
+    WITHDRAW_TX_SUCCEEDED: () => {
+      update(
+        [
+          `ASCII_SUCCESS`,
+          `Funds are safu.`,
+          `If you change your mind, please come back.`
+        ],
+        () => setTimeout(() => autoClose(), 5000)
+      );
+    },
+    WITHDRAW_TX_FAILED: () => {
+      update([`Yeet`]);
     }
   };
+
+  function autoClose() {
+    update([`This page will auto-close in`], () => {
+      terminal.updateInterval.set(1000);
+      update([`3`, `2`, `1`], () => {
+        window.close();
+        terminal.updateInterval.set(100);
+        setTimeout(() => {
+          update([`Just kidding, go about your business.`]);
+        }, 1500);
+      });
+    });
+  }
 
   const commands = {
     y: () => {
