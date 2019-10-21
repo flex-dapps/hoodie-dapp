@@ -252,6 +252,7 @@
               });
               clearInterval(loadingInterval);
               await depositTx.wait();
+              await emailCollected();
               const { hash, wait } = await wallet.depositDai(Number(daiAmount));
               clearInterval(loadingInterval);
               update([`Tx: ${hash}`]);
@@ -356,9 +357,7 @@
           ``,
           ``
         ],
-        () => {
-          printStart();
-        }
+        printStart
       );
     },
     DEPOSIT_TX_FAILED: reason => {
@@ -373,11 +372,12 @@
           ``,
           ``
         ],
-        printStart()
+        printStart
       );
     },
     DEPOSIT_TX_SUCCEEDED: tx => {
       // sweet, now we tell the user their position in the waiting list i guess
+      wallet.getWaitingList();
       update(
         [
           `ASCII_SUCCESS`,
@@ -392,6 +392,11 @@
           }, 5000);
         }
       );
+      setHandlers({
+        _DEFAULT: () => {
+          printStart();
+        }
+      });
       // get the email address of the user who has deposited this DAI, and send
       // it to ourselves along with the ETH address they used to buy in
     },
@@ -418,16 +423,21 @@
             _DEFAULT: async () => {
               let moreDai = Number(answer);
               console.log({ moreDai });
-              update([`Depositing ${moreDai} more DAI`]);
+              update([`Depositing ${moreDai} more DAI`], () =>
+                prompt.set("Waiting...")
+              );
               let loadingInterval = printLoading();
-              const { hash, wait } = await wallet.depositDai(moreDai);
+              const approveTx = await wallet.approveDai(moreDai);
+              update([`Tx: ${approveTx.hash}`]);
               clearInterval(loadingInterval);
-              update([`Waiting for transaction ${hash}`]);
+              await approveTx.wait();
+              const { hash, wait } = await wallet.depositMoreDai(moreDai);
+              update([`Tx: ${hash}`]);
               const tx = await wait();
               if (tx.status) {
-                purchaseFlow["DEPOSIT_TX_SUCCEEDED"];
+                purchaseFlow["DEPOSIT_TX_SUCCEEDED"]();
               } else {
-                purchaseFlow["DEPOSIT_TX_FAILED"];
+                purchaseFlow["DEPOSIT_TX_FAILED"]();
               }
             }
           });
@@ -449,10 +459,8 @@
               clearInterval(loadingInterval);
               await approveTx.wait();
               const { hash, wait } = await wallet.withdrawDai(withdrawAmount);
-              clearInterval(loadingInterval);
               update([`Tx: ${hash}`]);
               const tx = await wait();
-              console.log({ tx });
               if (tx.status) {
                 purchaseFlow["WITHDRAW_TX_SUCCEEDED"]();
               } else {
@@ -467,6 +475,8 @@
       // might be waiting; we'll email them...
     },
     WITHDRAW_TX_SUCCEEDED: () => {
+      wallet.getWaitingList();
+      prompt.set("");
       update(
         [
           `ASCII_SUCCESS`,
@@ -476,24 +486,52 @@
         () => setTimeout(() => autoClose(), 5000)
       );
     },
-    WITHDRAW_TX_FAILED: () => {
-      update([`Yeet`]);
+    WITHDRAW_TX_FAILED: reason => {
+      prompt.set("");
+      update(
+        [
+          `ASCII_ERROR`,
+          reason,
+          "Transaction error, nuking the process...",
+          ``,
+          ``,
+          ``,
+          ``,
+          ``
+        ],
+        printStart
+      );
     }
   };
 
+  async function emailCollected() {
+    return await new Promise(resolve => {
+      let interval = setInterval(() => {
+        console.log({ collected: wallet.emailSaved });
+        if (wallet.emailSaved) {
+          clearInterval(interval);
+          return resolve(true);
+        }
+      }, 500);
+    });
+  }
+
   function autoClose() {
+    prompt.set("");
     update([`This page will auto-close in`], () => {
       terminal.updateInterval.set(1000);
       update([`3`, `2`, `1`], () => {
-        window.close();
         terminal.updateInterval.set(100);
         setTimeout(() => {
-          update([`Just kidding, go about your business.`]);
+          update([`Just kidding, go about your business.`], () => {
+            setHandlers({
+              _DEFAULT: printStart
+            });
+          });
         }, 1500);
       });
     });
   }
-
   const commands = {
     y: () => {
       purchaseFlow["STEP_1"]();

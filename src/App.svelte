@@ -5,11 +5,18 @@
   import { terminal, wallet } from "./stores";
   import { Container, Terminal, Product } from "./components";
 
+  import uuid from "uuid";
+
   let state;
   let transactions = writable([]);
   wallet.txCallback.set(tx => {
     transactions.update(t => {
-      t.push(tx);
+      // tx.id = uuid.v4();
+      t.push("{");
+      for (let key in tx.transaction) {
+        t.push(`  ${key}: ${tx.transaction[key]}`);
+      }
+      t.push("}");
       return t;
     });
   });

@@ -1867,11 +1867,16 @@ const store = {
   },
   depositDai: async daiAmount => {
     console.log({ daiAmount })
-    // here we call keisaku's contract twice to deposit the DAI from the user's
-    // wallet
     const daiAmountBn = ethers.utils.parseEther(daiAmount.toString())
     hoodieDappContract = hoodieDappContract.connect(signer)
     const tx = await hoodieDappContract.mintRDaiAndPushUserToWaitingList(daiAmountBn)
+    return tx
+  },
+  depositMoreDai: async daiAmount => {
+    console.log({ daiAmount })
+    const daiAmountBn = ethers.utils.parseEther(daiAmount.toString())
+    hoodieDappContract = hoodieDappContract.connect(signer)
+    const tx = await hoodieDappContract.increaseDepositAmount(daiAmountBn)
     return tx
   },
   approveDai: async daiAmount => {

@@ -1,10 +1,16 @@
 <script>
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
+  import { get, writable } from "svelte/store";
+  import { flip } from "svelte/animate";
   let canvas = document.getElementsByTagName("canvas")[0];
   import { triangle, meter, barcode, slidingSquare } from "./shapes";
 
   export let transactions;
+
+  let textLineIndex = writable([]);
+  let textLineInterval;
+  let i = 0;
 
   let frame;
   let t = 0;
@@ -12,7 +18,16 @@
   let mouse = {};
 
   transactions.subscribe(tx => {
-    console.log({ tx });
+    if (tx.length && !textLineInterval) {
+      textLineInterval = setInterval(() => {
+        textLineIndex.set(get(textLineIndex).concat(i));
+        if (!tx[i]) {
+          clearInterval(textLineInterval);
+          textLineInterval = undefined;
+        }
+        i++;
+      }, 25);
+    }
   });
 
   onMount(() => {
@@ -82,6 +97,12 @@
     opacity: 0.5;
     transition: all 1s linear;
   }
+  pre {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 </style>
 
 <div class="product w-100 h-100 flex items-center">
@@ -90,13 +111,10 @@
   <div
     class="w-100 h-100 absolute flex flex-column items-start justify-end
     overflow-hidden">
-    {#each $transactions as tx}
-      <div
-        class="fade"
-        in:fly={{ y: 200, duration: 2000 }}
-        on:introend={e => {}}>
-        <pre>{JSON.stringify(tx.transaction, null, 1)}</pre>
-      </div>
+    {#each $textLineIndex as line}
+      {#if $transactions[line]}
+        <pre class="fade">{$transactions[line]}</pre>
+      {/if}
     {/each}
   </div>
 </div>
