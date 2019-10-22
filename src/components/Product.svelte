@@ -26,7 +26,7 @@
           textLineInterval = undefined;
         }
         i++;
-      }, 25);
+      }, 50);
     }
   });
 
@@ -86,6 +86,15 @@
     z-index: 2;
     position: relative;
   }
+  @media only screen and (max-width: 1072px) {
+    div {
+      display: none;
+    }
+    img {
+      height: 100%;
+      width: auto;
+    }
+  }
   canvas {
     position: absolute;
     top: 0;
@@ -105,7 +114,7 @@
   }
 </style>
 
-<div class="product w-100 h-100 flex items-center">
+<div class="product w-100 h-100 flex items-center justify-center">
   <img src="/img/front-5.png" />
   <canvas bind:this={canvas} />
   <div

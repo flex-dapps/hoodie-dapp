@@ -136,7 +136,6 @@
       update([`Connecting...`], () => prompt.set(`Connecting...`));
       let loadingInterval = printLoading();
       wallet.init({});
-      console.log({ address: get(address) });
       let gotWallet = a => {
         update(
           [
@@ -151,7 +150,6 @@
         setHandlers({
           y: async () => {
             prompt.set("Loading...");
-            console.log({ list: await wallet.isOnWaitingList() });
             if (await wallet.isOnWaitingList()) {
               purchaseFlow["WELCOME_BACK"]();
             } else {
@@ -166,11 +164,15 @@
               `Type (s) to see the wallet menu or (r) to refresh`
             ]);
             setHandlers({
-              s: () => {
-                wallet.init({ showSelect: true });
+              s: async () => {
+                const x = await wallet.init({ showSelect: true });
+                purchaseFlow["STEP_2"]();
               },
               r: () => {
                 printStart();
+              },
+              _DEFAULT: () => {
+                purchaseFlow["STEP_2"]();
               }
             });
           },
@@ -200,19 +202,22 @@
         update(
           [
             `Great.`,
-            `Since hoodies cost a reasonable sum of money, the minimum deposit is 200 DAI.`
+            `Since hoodies cost a reasonable sum of money, the minimum deposit is 200 DAI.`,
+            `How much DAI do you want to deposit?`
           ],
-          () => prompt.set(`How much DAI do you want to deposit? (200):`)
+          () => prompt.set(`Deposit amount (200):`)
         );
 
         setHandlers({
           y: async () => {
-            console.log(get(daiBalance));
             let daiAmount = answer;
-            if (isNaN(Number(daiAmount))) {
+            if (
+              isNaN(Number(daiAmount)) ||
+              Number(daiAmount) > Number(get(daiBalance))
+            ) {
               return update([
                 `Please enter a number between 200 and ${Math.floor(
-                  get(daiBalance).toFixed(1)
+                  Number(get(daiBalance)).toFixed(1)
                 )}`
               ]);
             }
@@ -220,8 +225,6 @@
             let loadingInterval = printLoading(500);
 
             try {
-              // @todo we should really pause the output after the first tx
-              // is confirmed by the user
               let depositTx = await wallet.approveDai(Number(daiAmount));
               update(
                 [
@@ -245,7 +248,6 @@
                     );
                     wallet.saveEmailAddress(email);
                   } else {
-                    // not a valid email
                     update([`Invalid, email address.`, `Please re-enter it.`]);
                   }
                 }
@@ -260,14 +262,12 @@
               if (tx.status) {
                 purchaseFlow["DEPOSIT_TX_SUCCEEDED"](tx);
               } else {
-                purchaseFlow["DEPOSIT_TX_FAILED"]();
+                purchaseFlow["TX_FAILED"]();
               }
             } catch (e) {
               console.error(e);
               clearInterval(loadingInterval);
-              purchaseFlow["DEPOSIT_TX_FAILED"](
-                "USER_DENIED_TRANSACTION_SIGNATURE"
-              );
+              purchaseFlow["TX_FAILED"]("USER_DENIED_TRANSACTION_SIGNATURE");
             }
           },
           n: () => {},
@@ -281,17 +281,36 @@
         console.log({ ethRequired });
         update(
           [
-            `Unfortunately, you don't have 200 DAI right now.`,
+            `You don't have 200 DAI right now.`,
             `It will cost ${Number(
               ethers.utils.formatEther(ethRequired)
             ).toFixed(
               2
             )} ETH to purchase the rest of the DAI you need (${daiRequired}).`
           ],
-          () =>
-            prompt.set(
-              `How much DAI do you want to purchase? (${daiRequired}):`
-            )
+          () => {
+            console.log({ myBalance: get(wallet.balance) });
+            console.log({
+              balanceTooLow: ethRequired.gt(
+                ethers.utils.parseEther(get(wallet.balance))
+              )
+            });
+            if (ethRequired.gt(ethers.utils.parseEther(get(wallet.balance)))) {
+              update(
+                [
+                  `You don't have enough ETH right now, go get some and then come back`
+                ],
+                () => {
+                  prompt.set("");
+                  setHandlers({ _DEFAULT: printStart });
+                }
+              );
+            } else {
+              prompt.set(
+                `How much DAI do you want to purchase? (${daiRequired}):`
+              );
+            }
+          }
         );
 
         setHandlers({
@@ -316,14 +335,12 @@
               if (tx.status) {
                 purchaseFlow["SWAP_TX_SUCCEEDED"](tx);
               } else {
-                purchaseFlow["SWAP_TX_FAILED"]();
+                purchaseFlow["TX_FAILED"]();
               }
             } catch (e) {
               console.error(e);
               clearInterval(loadingInterval);
-              purchaseFlow["SWAP_TX_FAILED"](
-                `USER_DENIED_TRANSACTION_SIGNATURE`
-              );
+              purchaseFlow["TX_FAILED"](`USER_DENIED_TRANSACTION_SIGNATURE`);
             }
           },
           n: () => {
@@ -334,38 +351,17 @@
           }
         });
       }
-
-      // get dai balance
-
-      // does the user have enough DAI?
-
-      // does the user have enough ether to purchase enough DAI?
     },
     SWAP_TX_SUCCEEDED: tx => {
       // the swap has succeeded, now deposit the money
       purchaseFlow["STEP_3"]();
     },
-    SWAP_TX_FAILED: reason => {
+    TX_FAILED: reason => {
       update(
         [
           `ASCII_ERROR`,
           reason,
           `Tx error, nuking the process...`,
-          ``,
-          ``,
-          ``,
-          ``,
-          ``
-        ],
-        printStart
-      );
-    },
-    DEPOSIT_TX_FAILED: reason => {
-      update(
-        [
-          `ASCII_ERROR`,
-          reason,
-          "Transaction error, nuking the process...",
           ``,
           ``,
           ``,
@@ -437,7 +433,7 @@
               if (tx.status) {
                 purchaseFlow["DEPOSIT_TX_SUCCEEDED"]();
               } else {
-                purchaseFlow["DEPOSIT_TX_FAILED"]();
+                purchaseFlow["TX_FAILED"]();
               }
             }
           });
@@ -595,11 +591,21 @@
   }
 
   onMount(async () => {
-    input.focus();
-    setInterval(() => input.focus(), 100);
-    printStart();
-    const list = await wallet.getWaitingList();
-    console.log({ list });
+    const width = window.innerWidth;
+    if (width < 1072) {
+      update([
+        `This graphical surface web interface pre-dates small screens.`,
+        `Please find a monitor or Visual Display Unit (VDU) with at least a 1072 pixel horizontal resolution and connect to the interface again.`,
+        `You should ensure that you have a text input device connected to your terminal. A mouse may also be necessary depending on configuration.`,
+        `We'll wait.`
+      ]);
+    } else {
+      input.focus();
+      setInterval(() => input.focus(), 100);
+      printStart();
+      const list = await wallet.getWaitingList();
+      console.log({ list });
+    }
   });
 
   paras.subscribe(() => {
@@ -685,12 +691,12 @@
           id="terminal-output-container"
           class="flex flex-column items-start justify-start pa4 overflow-scroll">
           {#each $paras as para, i}
-            {#if i === $paras.length - 1}
-              <p id="last" bind:this={lastLine}>{para}</p>
-            {:else if para.indexOf('ASCII') === 0}
+            {#if para.indexOf('ASCII') === 0}
               <div class="ascii w-100 flex items-center justify-center">
                 <pre>{ascii[para]}</pre>
               </div>
+            {:else if i === $paras.length - 1}
+              <p id="last" bind:this={lastLine}>{para}</p>
             {:else}
               <p>{para}</p>
             {/if}
