@@ -108,7 +108,8 @@
     daiBalance,
     ethRequiredForDai,
     sortedWaitingList,
-    emitter
+    emitter,
+    notify
   } = wallet;
 
   const purchaseFlow = {
@@ -253,12 +254,14 @@
                 }
               });
               clearInterval(loadingInterval);
-              await depositTx.wait();
+              // await depositTx.wait();
+              await awaitTx(depositTx.hash);
               await emailCollected();
               const { hash, wait } = await wallet.depositDai(Number(daiAmount));
               clearInterval(loadingInterval);
               update([`Tx: ${hash}`]);
-              const tx = await wait();
+              // const tx = await wait();
+              await awaitTx(hash);
               if (tx.status) {
                 purchaseFlow["DEPOSIT_TX_SUCCEEDED"](tx);
               } else {
@@ -331,7 +334,8 @@
               const { hash, wait } = await wallet.purchaseDai(Number(answer));
               clearInterval(loadingInterval);
               update([`Tx: ${hash}`]);
-              const tx = await wait();
+              // const tx = await wait();
+              await awaitTx(hash);
               if (tx.status) {
                 purchaseFlow["SWAP_TX_SUCCEEDED"](tx);
               } else {
@@ -426,10 +430,12 @@
               const approveTx = await wallet.approveDai(moreDai);
               update([`Tx: ${approveTx.hash}`]);
               clearInterval(loadingInterval);
-              await approveTx.wait();
+              // await approveTx.wait();
+              await awaitTx(approveTx.hash);
               const { hash, wait } = await wallet.depositMoreDai(moreDai);
               update([`Tx: ${hash}`]);
-              const tx = await wait();
+              // const tx = await wait();
+              await awaitTx(hash);
               if (tx.status) {
                 purchaseFlow["DEPOSIT_TX_SUCCEEDED"]();
               } else {
@@ -509,6 +515,17 @@
           return resolve(true);
         }
       }, 500);
+    });
+  }
+
+  async function awaitTx(hash) {
+    const tx = notify.transaction(hash);
+    tx.emitter.on("all", () => false);
+    return await new Promise(resolve => {
+      tx.emitter.on("txConfirmed", () => {
+        resolve();
+        return false;
+      });
     });
   }
 
@@ -606,6 +623,12 @@
       const list = await wallet.getWaitingList();
       console.log({ list });
     }
+    setTimeout(() => {
+      const wrap = document.getElementById("terminal-output-wrapper");
+      document.getElementById("terminal-output-container").style.maxHeight =
+        wrap.scrollHeight + "px";
+      console.log({ wrap });
+    }, 500);
   });
 
   paras.subscribe(() => {
@@ -685,7 +708,7 @@
   </div>
   <div class="h-100">
     <div class="h-100">
-      <div class="flex flex-column h-100">
+      <div id="terminal-output-wrapper" class="flex flex-column h-100">
         <div
           bind:this={terminalOutputContainer}
           id="terminal-output-container"

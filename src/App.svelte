@@ -19,6 +19,7 @@
       t.push("}");
       return t;
     });
+    return false
   });
 </script>
 

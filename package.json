@@ -16,6 +16,7 @@
   "dependencies": {
     "bnc-notify": "^0.1.2",
     "bnc-onboard": "^0.1.1",
+    "bnc-sdk": "^0.1.2",
     "ethers": "^4.0.38",
     "rollup-plugin-json": "^4.0.0",
     "sirv-cli": "^0.4.4",

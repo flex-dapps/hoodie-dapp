@@ -1,6 +1,6 @@
 import ethers from 'ethers'
 import Onboard from 'bnc-onboard'
-import Notify from "bnc-notify"
+import blocknativeSdk from "bnc-sdk"
 
 import { writable, derived, get } from 'svelte/store'
 import getSigner from './signer'
@@ -1821,22 +1821,38 @@ let daiExchangeAddress
 let daiExchangeContract
 let signer
 
+const notify = blocknativeSdk({
+  dappId: "78761f7e-d978-4d9d-91c0-172e5d997116",
+  networkId: 4,
+  transactionListeners: [event => {
+    get(store.txCallback)(event)
+  }]
+})
+
 let waitingList = writable([])
 const store = {
   provider,
+  notify,
   emitter: writable(null),
   init: async ({ showSelect }) => {
     onboard.config({ darkMode: true })
-    await onboard.walletSelect(showSelect ? null : 'MetaMask')
-    await onboard.walletReady()
-    daiExchangeAddress = await uniswapFactory.getExchange(DAI_ADDRESS)
-    daiExchangeContract = new ethers.Contract(
-      daiExchangeAddress,
-      UNISWAP_EXCHANGE_ABI,
-      provider
-    )
-    let acc = notify.account(get(store.address))
-    store.emitter.set(acc.emitter)
+    try {
+      console.log(1)
+      await onboard.walletSelect(showSelect || !window.web3 ? null : 'MetaMask')
+      console.log(2)
+      await onboard.walletReady()
+      console.log(3)
+      daiExchangeAddress = await uniswapFactory.getExchange(DAI_ADDRESS)
+      daiExchangeContract = new ethers.Contract(
+        daiExchangeAddress,
+        UNISWAP_EXCHANGE_ABI,
+        provider
+      )
+      let acc = notify.account(get(store.address))
+      store.emitter.set(acc.emitter)
+    } catch (e) {
+      console.log({e})
+    }
   },
   ethRequiredForDai: async daiAmount => {
     // should be able to find out from uniswap how to purchase the DAI
@@ -2028,14 +2044,6 @@ const onboard = Onboard.init({
     walletReady: Onboard.modules.ready.defaults({
       networkId: 4
     })
-  }
-})
-
-const notify = Notify({
-  dappId: "78761f7e-d978-4d9d-91c0-172e5d997116",
-  networkId: 4,
-  transactionEvents: event => {
-    get(store.txCallback)(event)
   }
 })
 
